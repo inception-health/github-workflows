@@ -1,0 +1,71 @@
+on:
+  workflow_call:
+    inputs:
+      namespace:
+        description: Namespace of the service
+        required: true
+        type: string
+      service-name:
+        description: Name of the service
+        required: true
+        type: string
+      has-app-version:
+        description: Whether the service has an app version or not
+        required: true
+        type: boolean
+      has-infra-version:
+        description: Whether the service has an infra version or not
+        required: true
+        type: boolean
+      has-function-version:
+        description: Whether the service has a function version or not
+        required: false
+        type: boolean
+    outputs:
+      infra-version:
+        description: Infra version
+        value: ${{ jobs.get-versions.outputs.infra-version }}
+      app-version:
+        description: App version
+        value: ${{ jobs.get-versions.outputs.app-version }}
+      function-version:
+        description: Function version
+        value: ${{ jobs.get-versions.outputs.function-version }}
+
+jobs:
+  get-versions:
+    runs-on: [self-hosted, deployer]
+    outputs:
+      infra-version: ${{ steps.infraVersion.outputs.version }}
+      app-version: ${{ steps.appVersion.outputs.version }}
+      function-version: ${{ steps.functionVersion.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.3.4
+      - name: Get infra-version
+        id: infraVersion
+        if: ${{ inputs.has-infra-version }}
+        run: |
+          VERSION=$(yq eval -e '.infra-version' '${{ inputs.service-name }}.config.yml')
+          echo "::set-output name=version::$VERSION"
+      - name: fail if infra image tag does not exist
+        if: ${{ inputs.has-infra-version }}
+        run: aws ecr describe-images --repository-name ${{ inputs.namespace }}/${{ inputs.service-name }}-infra --image-ids imageTag=${{ steps.infraVersion.outputs.version }} || exit 1
+      - name: Get app-version
+        id: appVersion
+        if: ${{ inputs.has-app-version }}
+        run: |
+          VERSION=$(yq eval '.app-version' '${{ inputs.service-name }}.config.yml')
+          echo "::set-output name=version::$VERSION"
+      - name: fail if app image tag does not exist
+        if: ${{ inputs.has-app-version }}
+        run: aws ecr describe-images --repository-name ${{ inputs.namespace }}/${{ inputs.service-name }} --image-ids imageTag=${{ steps.appVersion.outputs.version }} || exit 1
+      - name: Get function-version
+        id: functionVersion
+        if: ${{ inputs.has-function-version }}
+        run: |
+          VERSION=$(yq eval '.function-version' '${{ inputs.service-name }}.config.yml')
+          echo "::set-output name=version::$VERSION"
+      - name: fail if function image tag does not exist
+        if: ${{ inputs.has-function-version }}
+        run: aws ecr describe-images --repository-name ${{ inputs.namespace }}/${{ inputs.service-name }} --image-ids imageTag=${{ steps.functionVersion.outputs.version }} || exit 1

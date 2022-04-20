@@ -1,0 +1,69 @@
+name: create ecr
+on:
+  workflow_call:
+    inputs:
+      ecr-name:
+        description: Name of the ecr repository to create
+        required: true
+        type: string
+
+jobs:
+  create-ecr:
+    runs-on: [self-hosted, builder]
+    steps:
+      - name: Create ecr if does not exit
+        continue-on-error: true
+        run: >
+          aws ecr describe-repositories --repository-names ${{ inputs.ecr-name }} ||
+          aws ecr create-repository
+          --repository-name ${{ inputs.ecr-name }}
+          --image-tag-mutability IMMUTABLE
+          --image-scanning-configuration scanOnPush=true
+      - name: Create ecr policy to grant any in org
+        run: |
+          cat <<EOF > ecr-policy.json
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "CrossAccountPermission",
+                "Effect": "Allow",
+                "Principal": {
+                  "AWS": "*"
+                },
+                "Action": [
+                  "ecr:BatchCheckLayerAvailability",
+                  "ecr:BatchGetImage",
+                  "ecr:GetAuthorizationToken",
+                  "ecr:GetDownloadUrlForLayer"
+                ],
+                "Condition": {
+                  "StringEquals": {
+                    "aws:PrincipalOrgID": "o-p0eh8cenv2"
+                  }
+                }
+              },
+              {
+                "Sid": "LambdaECRImageCrossAccountRetrievalPolicy",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lambda.amazonaws.com"
+                },
+                "Action": [
+                  "ecr:BatchGetImage",
+                  "ecr:GetDownloadUrlForLayer"
+                ],
+                "Condition": {
+                  "StringLike": {
+                    "aws:sourceARN": "arn:aws:lambda:*:*:function:*"
+                  }
+                }
+              }
+            ]
+          }
+          EOF
+      - name: Set ecr policy
+        run: >
+          aws ecr set-repository-policy
+          --repository-name ${{ inputs.ecr-name }}
+          --policy-text file://ecr-policy.json

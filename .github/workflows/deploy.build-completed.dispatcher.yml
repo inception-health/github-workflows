@@ -1,0 +1,39 @@
+name: post-build
+
+on:
+  workflow_call:
+    inputs:
+      service-name:
+        description: The name of the service. Function name is considered the service name in this context.
+        required: true
+        type: string
+      artifact-type:
+        description: The type of artifact (infra, app, or function)
+        required: true
+        type: string
+    secrets:
+      token:
+        required: true
+
+jobs:
+  dispatch-to-deploy:
+    runs-on: [self-hosted, builder]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.4.0
+      - name: Set AUTHOR env var
+        run: echo "AUTHOR=$(git log -1 --pretty=format:'%an <%ae>')" >> $GITHUB_ENV
+      - name: Publish build-completed to deploy
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.token }}
+          repository: ${{ github.repository }}-deploy
+          event-type: build-completed
+          client-payload: >
+            {
+              "artifact_type": "${{ inputs.artifact-type }}",
+              "artifact_version": "${{ github.sha }}",
+              "author": "${{ env.AUTHOR }}",
+              "service_name": "${{ inputs.service-name }}",
+              "source_repo": "${{ github.repository }}"
+            }
