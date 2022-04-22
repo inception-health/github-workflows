@@ -35,7 +35,6 @@ jobs:
           context: infra/${{ inputs.service-name }}
           push: true
           cache-from: type=gha
-          cache-to: type=gha,mode=max
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
