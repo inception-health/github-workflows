@@ -50,7 +50,7 @@ jobs:
           -t base:${{ github.sha }}
           --cache-from=type=gha
           --build-arg NODE_AUTH_TOKEN
-          .
+          services/${{ inputs.service-name }}
       - name: Run unit test
         run: >
           docker run 
