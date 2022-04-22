@@ -49,7 +49,7 @@ jobs:
   synth:
     needs: build-and-test
     runs-on: [self-hosted, builder]
-    timeout-minutes: 4
+    timeout-minutes: 5
     strategy:
       matrix:
         deploy-env: [dev, staging, production]
