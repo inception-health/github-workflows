@@ -31,7 +31,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v4.12.0
         with:
           commit_message: |
-            feat(${{ fromJSON(inputs.payloadJSON).service_name }}/${{ fromJSON(inputs.payloadJSON).artifact_type }}): set version to ${{ env.SHORT_SHA }}
+            feat(${{ fromJSON(${{ fromJSON(inputs.payloadJSON).artifact_type }}/inputs.payloadJSON).service_name }}): set version to ${{ env.SHORT_SHA }}
             triggered commit: ${{ github.server_url }}/${{ fromJSON(inputs.payloadJSON).source_repo }}/commit/${{ fromJSON(inputs.payloadJSON).artifact_version }}
           commit_author: ${{ fromJSON(inputs.payloadJSON).author }}>
           skip_dirty_check: false
