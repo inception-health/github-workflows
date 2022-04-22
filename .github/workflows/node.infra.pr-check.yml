@@ -68,6 +68,6 @@ jobs:
           -e AWS_WEB_IDENTITY_TOKEN_FILE=$AWS_WEB_IDENTITY_TOKEN_FILE
           -v $AWS_WEB_IDENTITY_TOKEN_FILE:$AWS_WEB_IDENTITY_TOKEN_FILE
           -e DEPLOY_ENV=${{ matrix.deploy-env }}
-          -e FUNCTION_VERSION="DUMMY_VERSION_FOR_SYNTH"
+          -e APP_VERSION="DUMMY_VERSION_FOR_SYNTH"
           ${{ steps.login-ecr.outputs.registry }}/${{ github.event.repository.name }}/${{ inputs.service-name }}-infra:${{ github.sha }}
           npm run synth
