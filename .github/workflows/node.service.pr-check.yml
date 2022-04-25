@@ -34,28 +34,27 @@ jobs:
         with:
           context: services/${{ inputs.service-name }}
           push: true
-          # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#local-cache
-          cache-from: type=local,src=/tmp/.buildx-cache/${{ github.event.repository.name }}-${{ inputs.service-name }}
-          cache-to: type=local,dest=/tmp/.buildx-cache/${{ github.event.repository.name }}-${{ inputs.service-name }},mode=max
+          cache-from: type=gha,scope=${{ github.event.repository.name }}-${{ inputs.service-name }}
+          cache-to: type=gha,scope=${{ github.event.repository.name }}-${{ inputs.service-name }},mode=max
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             NODE_AUTH_TOKEN=${{ secrets.token }}
-      - name: Build target base # need to be careful as targetting build and exporting cache may partially break docker build cache
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.token }}
-        run: >
-          docker buildx build
-          --load
-          --target base
-          -t base:${{ github.sha }}
-          --build-arg NODE_AUTH_TOKEN
-          services/${{ inputs.service-name }}
+      - name: Build and load target base
+        uses: docker/build-push-action@v2
+        with:
+          context: services/${{ inputs.service-name }}
+          load: true
+          cache-from: type=gha,scope=${{ github.event.repository.name }}-${{ inputs.service-name }}
+          tags: base:${{ github.sha }}
+          target: base
+          build-args: |
+            NODE_AUTH_TOKEN=${{ secrets.token }}
       - name: Run unit test
         run: >
           docker run
           --rm
-          base:${{ github.sha }} 
+          base:${{ github.sha }}
           npm run test:ci
       - name: Check dependencies
         if: always()

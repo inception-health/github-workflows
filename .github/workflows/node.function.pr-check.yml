@@ -34,9 +34,8 @@ jobs:
         with:
           context: functions/${{ inputs.function-name }}
           push: true
-          # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#local-cache
-          cache-from: type=local,src=/tmp/.buildx-cache/${{ github.event.repository.name }}-${{ inputs.function-name }}
-          cache-to: type=local,dest=/tmp/.buildx-cache/${{ github.event.repository.name }}-${{ inputs.function-name }},mode=max
+          cache-from: type=gha,scope=${{ github.event.repository.name }}-${{ inputs.function-name }}
+          cache-to: type=gha,scope=${{ github.event.repository.name }}-${{ inputs.function-name }},mode=max
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
