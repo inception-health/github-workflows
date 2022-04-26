@@ -12,7 +12,7 @@ on:
         required: true
 
 jobs:
-  build-and-test:
+  build:
     runs-on: [self-hosted, builder]
     timeout-minutes: 10
     steps:
@@ -40,6 +40,14 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             NODE_AUTH_TOKEN=${{ secrets.token }}
+  test: # unit tests can intermittently fail. splitting out allows re-running without failing when trying to push docker image on same sha
+    needs: build
+    runs-on: [self-hosted, builder]
+    timeout-minutes: 10
+    steps:
+      - name: Amazon ECR Login
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
       - name: Run unit test
         run: >
           docker run
@@ -47,7 +55,7 @@ jobs:
           ${{ steps.login-ecr.outputs.registry }}/${{ github.event.repository.name }}/${{ inputs.function-name }}:${{ github.sha }}
           npm run test:ci
   synth:
-    needs: build-and-test
+    needs: build
     runs-on: [self-hosted, builder]
     timeout-minutes: 5
     strategy:
