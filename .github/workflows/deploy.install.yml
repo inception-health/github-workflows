@@ -28,7 +28,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
       - name: Install
         run: >
-          docker run 
+          docker run
           --rm
           -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
           -e AWS_REGION=$AWS_REGION
@@ -39,5 +39,5 @@ jobs:
           -e NODE_ENV=production
           -e APP_VERSION=${{ inputs.app-version }}
           -e FUNCTION_VERSION=${{ inputs.function-version }}
-          $ECR_REGISTRY/${{ inputs.installer-repository-name }}
+          ${{ steps.login-ecr.outputs.registry }}/${{ inputs.installer-repository-name }}
           npm run deploy
